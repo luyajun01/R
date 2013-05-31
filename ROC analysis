@@ -1,0 +1,21 @@
+############################################################
+#
+#
+############################################################
+library(ROCR)###ROC package
+library(foreign)# 导入数据的package
+e=read.spss("C:\\Users\\Administrator\\Desktop\\项目\\阜外论文数据\\lunwen.sav")#data
+MVI=G[,486]#内脏脂肪指数
+FAT=G[,520]#FAT
+pred<-prediction(MVI,FAT)
+perf<-performance(pred,"tpr","fpr",alpha.values=T)
+auc.tmp <- performance(pred,"auc")
+auc<-as.numeric(auc.tmp@y.values)
+auc<-round(auc,4)#AUC面积，保留4位有效数字
+x=perf@x.values[[1]][26]#true positive rate
+y=perf@y.values[[1]][26]#false positive rete
+z=perf@alpha.values#cutoff
+plot(perf,print.cutoffs.at=c(8),spread.scale=2,colorize=TRUE,lwd=5,xlab="FPR",ylab="TPR",main=c("MVI's ROC"))
+grid(5,5,lwd = 1)###生成5*5的格子
+lines(par()$usr[1:2],par()$usr[3:4],lty=2,lwd=2,col="grey")
+legend(.7,.3,legend=c("AUC=90.5%","Tpr=0.83","Fpr=0.20"))
