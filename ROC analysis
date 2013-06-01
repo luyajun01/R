@@ -6,7 +6,7 @@ library(ROCR)###ROC package
 library(foreign)# 导入数据的package
 e=read.spss("C:\\Users\\Administrator\\Desktop\\项目\\阜外论文数据\\lunwen.sav")#data
 MVI=G[,486]#内脏脂肪指数
-FAT=G[,520]#FAT
+FAT=G[,521]#FAT的0-1定义是BMI<=28为0,>28为1
 pred<-prediction(MVI,FAT)
 perf<-performance(pred,"tpr","fpr",alpha.values=T)
 auc.tmp <- performance(pred,"auc")
