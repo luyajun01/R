@@ -1,0 +1,48 @@
+---
+title: "train model"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+```{r}
+# elasticnet --------------------------------------------------------------
+  lamba,alpa path
+  lambda_opts = list(list(1), list(.9),list(.8),list(.7),list(.5), list(.4),list(.3),list(.2),list(.1), list(.01), list(.001), list(.0001), list(.00001), list(0))
+  alpha_opts <- list()
+  p <- seq(0.1, 0.9, 0.05)
+  for (i in 1:length(p)) {
+    alpha_opts[[i]] <- list(p[i])
+  }
+  hyper_parameters = list(alpha = alpha_opts,lambda = lambda_opts)
+  grid <- h2o.grid("glm", hyper_params = hyper_parameters,training_frame = final_onehot_train_samples %>% select(feat_model) %>%
+                     bind_cols(train_data %>% select(label_3)) %>% h2o::as.h2o(),
+                   y = "label_3", family = "binomial")
+  #grid_models <- lapply(grid@model_ids, function(model_id) { model = h2o.getModel(model_id) })
+  grid_models <- mclapply(grid@model_ids, FUN = function(model_id){model = h2o.getModel(model_id)}, mc.cores = mc_cores)
+  for (i in 1:length(grid_models)) {
+    print(sprintf("regularization: %-50sauc: %f",grid_models[[i]]@model$model_summary$regularization, h2o.auc(grid_models[[i]])))
+  }
+  auc <- list()
+  for (i in 1:length(grid_models)) {
+    auc[[i]] <- h2o.auc(grid_models[[i]])
+  }
+  grid_models[[which.max(auc %>% do.call(c,.))]]@model$model_summary$regularization
+  fit_h2o_glm = h2o.glm(training_frame = final_onehot_train_samples %>% select(feat_model) %>%
+                          bind_cols(train_data %>% select(label_3)) %>% h2o::as.h2o(),
+                        y = "label_3", family = "binomial",alpha = 0.85, lambda = 1.0E-4)
+  # coefficients of model fit
+  typewhich(fit_h2o_glm@model$coefficients==0)
+  save(fit_h2o_glm, file = sprintf("%s/fit_h2o_glm.RData", modelpath))
+  save(fit_h2o_glm, file = sprintf("%s/fit_h2o_glm.RData", modelpath))
+  # # Use cvglmnet to get pernalized model
+  model_fit  = mifi_model_model_train_LR(x_train = final_onehot_train_samples %>% select(feat_model),
+                                         y_train = train_data[['label_3']],
+                                         lambda = NULL,
+                                         nfold = 5,
+                                         measure = 'auc',
+                                         weights_output_file = sprintf("%s/model_weights_output.csv", modelpath))
+
+  ## glm model
+  vars_cv_selected <- setdiff(model_fit$variable[model_fit$coef != 0], '(Intercept)')
+```
+
